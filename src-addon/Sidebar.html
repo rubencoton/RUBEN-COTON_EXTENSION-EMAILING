@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 16px; background: #fafafa; }
+    h2 { color: #333; font-size: 16px; margin-top: 0; }
+    h3 { color: #666; font-size: 13px; margin-bottom: 8px; }
+    .card { background: #fff; border-radius: 8px; padding: 12px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .stat { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #eee; font-size: 13px; }
+    .stat:last-child { border-bottom: none; }
+    .stat-label { color: #666; }
+    .stat-value { font-weight: bold; color: #333; }
+    .btn { display: block; width: 100%; padding: 10px; margin-top: 8px; border: none; border-radius: 6px; font-size: 13px; cursor: pointer; text-align: center; }
+    .btn-primary { background: #f60; color: #fff; }
+    .btn-secondary { background: #eee; color: #333; }
+    .btn:hover { opacity: 0.9; }
+    .status { font-size: 11px; color: #999; margin-top: 12px; text-align: center; }
+    .loading { text-align: center; padding: 20px; color: #999; }
+  </style>
+</head>
+<body>
+  <h2>RUBEN COTON Emailing</h2>
+
+  <div class="card">
+    <h3>Ecosistema Google</h3>
+    <div id="stats" class="loading">Cargando...</div>
+  </div>
+
+  <div class="card">
+    <h3>Hoja actual</h3>
+    <div id="sheet-info" class="loading">Analizando...</div>
+  </div>
+
+  <div class="card">
+    <h3>Acciones</h3>
+    <button class="btn btn-primary" onclick="syncContacts()">Sync contactos CRM</button>
+    <button class="btn btn-secondary" onclick="listCrms()">Ver todos los CRMs</button>
+    <button class="btn btn-secondary" onclick="showAccount()">Estado cuenta</button>
+  </div>
+
+  <div class="status" id="status">manager@rubencoton.com</div>
+
+  <script>
+    // Cargar stats al abrir
+    google.script.run
+      .withSuccessHandler(function(stats) {
+        document.getElementById('stats').innerHTML =
+          '<div class="stat"><span class="stat-label">Hojas CRM</span><span class="stat-value">' + stats.sheets + '</span></div>' +
+          '<div class="stat"><span class="stat-label">Archivos Drive</span><span class="stat-value">' + stats.driveFiles + '</span></div>' +
+          '<div class="stat"><span class="stat-label">Emails no leidos</span><span class="stat-value">' + stats.unreadEmails + '</span></div>' +
+          '<div class="stat"><span class="stat-label">Eventos hoy</span><span class="stat-value">' + stats.todayEvents + '</span></div>';
+      })
+      .withFailureHandler(function(err) {
+        document.getElementById('stats').innerHTML = '<div style="color:red">Error: ' + err.message + '</div>';
+      })
+      .getEcosystemStats_();
+
+    // Info de hoja actual
+    google.script.run
+      .withSuccessHandler(function(count) {
+        document.getElementById('sheet-info').innerHTML =
+          '<div class="stat"><span class="stat-label">Emails detectados</span><span class="stat-value">' + count + '</span></div>';
+      })
+      .countEmailsInActiveSheet_();
+
+    function syncContacts() {
+      document.getElementById('status').textContent = 'Sincronizando...';
+      google.script.run
+        .withSuccessHandler(function(total) {
+          document.getElementById('status').textContent = 'Total emails CRM: ' + total;
+        })
+        .countAllCrmEmails();
+    }
+
+    function listCrms() {
+      document.getElementById('status').textContent = 'Cargando CRMs...';
+      google.script.run
+        .withSuccessHandler(function(crms) {
+          var html = '';
+          crms.forEach(function(c) {
+            if (c.error) {
+              html += '<div class="stat"><span class="stat-label">' + c.name + '</span><span style="color:red">Error</span></div>';
+            } else {
+              html += '<div class="stat"><span class="stat-label">' + c.name + '</span><span class="stat-value">' + c.tabs + ' tabs</span></div>';
+            }
+          });
+          document.getElementById('sheet-info').innerHTML = '<h3>CRMs</h3>' + html;
+          document.getElementById('status').textContent = crms.length + ' CRMs encontrados';
+        })
+        .listAllCrms();
+    }
+
+    function showAccount() {
+      google.script.run
+        .withSuccessHandler(function(info) {
+          document.getElementById('status').textContent = info.email + ' | ' + info.timeZone;
+        })
+        .getAccountInfo();
+    }
+  </script>
+</body>
+</html>
