@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Google Sans', Arial, sans-serif; background: #f8f9fa; color: #202124; font-size: 13px; }
+
+    /* Header */
+    .header { background: #1a1a1a; color: #fff; padding: 16px; text-align: center; }
+    .header h1 { font-size: 15px; font-weight: 600; letter-spacing: 0.5px; }
+    .header .subtitle { font-size: 11px; color: #f60; margin-top: 2px; }
+
+    /* Sections */
+    .section { background: #fff; margin: 8px; border-radius: 8px; padding: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+    .section-title { font-size: 11px; font-weight: 600; color: #5f6368; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+
+    /* Form elements */
+    label { display: block; font-size: 12px; color: #5f6368; margin-bottom: 4px; margin-top: 10px; }
+    label:first-child { margin-top: 0; }
+    input[type="text"], input[type="email"], input[type="datetime-local"], select {
+      width: 100%; padding: 8px 10px; border: 1px solid #dadce0; border-radius: 6px;
+      font-size: 13px; background: #fff; color: #202124; outline: none;
+    }
+    input:focus, select:focus { border-color: #f60; box-shadow: 0 0 0 2px rgba(255,102,0,0.15); }
+    select { cursor: pointer; }
+
+    /* Checkbox */
+    .checkbox-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+    .checkbox-row input[type="checkbox"] { accent-color: #f60; width: 16px; height: 16px; }
+    .checkbox-row label { margin: 0; font-size: 13px; color: #202124; }
+
+    /* Buttons */
+    .btn { display: block; width: 100%; padding: 10px; border: none; border-radius: 6px;
+      font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; margin-top: 8px; transition: opacity 0.2s; }
+    .btn:hover { opacity: 0.9; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary { background: #f60; color: #fff; }
+    .btn-secondary { background: #e8eaed; color: #202124; }
+    .btn-outline { background: transparent; border: 1px solid #dadce0; color: #5f6368; }
+    .btn-small { display: inline-block; width: auto; padding: 4px 12px; font-size: 11px; margin-top: 0; }
+    .btn-row { display: flex; gap: 6px; margin-top: 8px; }
+    .btn-row .btn { flex: 1; }
+
+    /* Stats */
+    .stat-box { background: #f1f3f4; border-radius: 6px; padding: 10px; text-align: center; margin-top: 8px; }
+    .stat-number { font-size: 24px; font-weight: 700; color: #f60; }
+    .stat-label { font-size: 11px; color: #5f6368; }
+
+    /* Progress */
+    .progress-wrap { display: none; margin-top: 10px; }
+    .progress-bar { height: 6px; background: #e8eaed; border-radius: 3px; overflow: hidden; }
+    .progress-fill { height: 100%; background: #f60; border-radius: 3px; transition: width 0.3s; width: 0%; }
+    .progress-text { font-size: 11px; color: #5f6368; margin-top: 4px; text-align: center; }
+
+    /* Status */
+    .status-msg { font-size: 11px; color: #5f6368; text-align: center; padding: 8px; }
+    .status-msg.error { color: #d93025; }
+    .status-msg.success { color: #188038; }
+
+    /* Advanced toggle */
+    .advanced-toggle { font-size: 12px; color: #1a73e8; cursor: pointer; margin-top: 10px; display: flex; align-items: center; gap: 4px; }
+    .advanced-toggle:hover { text-decoration: underline; }
+    .advanced-content { display: none; margin-top: 8px; }
+    .advanced-content.show { display: block; }
+
+    /* Quota */
+    .quota-bar { display: flex; justify-content: space-between; font-size: 11px; color: #5f6368; margin-top: 6px; }
+
+    /* Draft preview */
+    .draft-preview { background: #f1f3f4; border-radius: 6px; padding: 8px; margin-top: 8px; font-size: 12px; max-height: 80px; overflow-y: auto; color: #5f6368; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <h1>EMAILING RUBEN COTON</h1>
+    <div class="subtitle">Mail Merge</div>
+  </div>
+
+  <!-- Remitente -->
+  <div class="section">
+    <div class="section-title">Remitente</div>
+    <label>Nombre del remitente</label>
+    <input type="text" id="senderName" value="RUBEN COTON" placeholder="Nombre que vera el destinatario">
+
+    <label>Enviar desde</label>
+    <select id="aliasSelect">
+      <option value="">Cargando aliases...</option>
+    </select>
+  </div>
+
+  <!-- Plantilla -->
+  <div class="section">
+    <div class="section-title">Plantilla de email</div>
+    <label>Borrador de Gmail</label>
+    <div style="display:flex; gap:6px;">
+      <select id="draftSelect" style="flex:1;">
+        <option value="">Cargando borradores...</option>
+      </select>
+      <button class="btn btn-outline btn-small" onclick="loadDrafts()">&#8635;</button>
+    </div>
+    <div id="draftPreview" class="draft-preview" style="display:none;"></div>
+  </div>
+
+  <!-- Destinatarios -->
+  <div class="section">
+    <div class="section-title">Destinatarios</div>
+    <div class="stat-box">
+      <div class="stat-number" id="recipientCount">-</div>
+      <div class="stat-label">emails encontrados en la hoja activa</div>
+    </div>
+
+    <div class="checkbox-row">
+      <input type="checkbox" id="skipSent" checked>
+      <label for="skipSent">Saltar filas ya enviadas</label>
+    </div>
+
+    <!-- Filtro avanzado -->
+    <div class="advanced-toggle" onclick="toggleAdvanced()">
+      <span id="advancedArrow">&#9654;</span> Opciones avanzadas
+    </div>
+    <div id="advancedContent" class="advanced-content">
+      <label>Filtrar por columna</label>
+      <select id="filterColumn">
+        <option value="">Sin filtro</option>
+      </select>
+      <label>Valor del filtro</label>
+      <input type="text" id="filterValue" placeholder="Solo enviar si la columna = este valor">
+
+      <label>CC (opcional)</label>
+      <input type="email" id="ccEmail" placeholder="copia@ejemplo.com">
+
+      <label>BCC (opcional)</label>
+      <input type="email" id="bccEmail" placeholder="copia-oculta@ejemplo.com">
+
+      <label>Responder a (opcional)</label>
+      <input type="email" id="replyTo" placeholder="respuestas@ejemplo.com">
+    </div>
+  </div>
+
+  <!-- Cuota -->
+  <div class="section">
+    <div class="section-title">Cuota de envio</div>
+    <div class="quota-bar">
+      <span>Restante hoy:</span>
+      <span id="quotaCount">...</span>
+    </div>
+    <div class="progress-bar" style="margin-top:4px;">
+      <div class="progress-fill" id="quotaFill" style="width:100%; background:#188038;"></div>
+    </div>
+  </div>
+
+  <!-- Acciones -->
+  <div class="section">
+    <button class="btn btn-secondary" onclick="sendTest()" id="btnTest">Enviar email de prueba</button>
+    <button class="btn btn-primary" onclick="sendMerge()" id="btnSend" disabled>
+      Enviar <span id="sendCount">0</span> emails
+    </button>
+
+    <!-- Programar -->
+    <div class="advanced-toggle" onclick="toggleSchedule()" style="margin-top:10px;">
+      <span id="scheduleArrow">&#9654;</span> Programar envio
+    </div>
+    <div id="scheduleContent" class="advanced-content">
+      <label>Fecha y hora</label>
+      <input type="datetime-local" id="scheduleDate">
+      <button class="btn btn-outline" onclick="scheduleMerge()" style="margin-top:6px;">Programar</button>
+    </div>
+
+    <!-- Progreso -->
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="progress-text" id="progressText">Enviando...</div>
+    </div>
+  </div>
+
+  <!-- Status -->
+  <div id="statusMsg" class="status-msg"></div>
+
+<script>
+  /* ═══ State ═══ */
+  var currentDrafts = [];
+  var recipientCount = 0;
+
+  /* ═══ Init ═══ */
+  window.addEventListener('load', function() {
+    loadDrafts();
+    loadAliases();
+    loadRecipients();
+    loadQuota();
+    loadColumns();
+  });
+
+  /* ═══ Load drafts ═══ */
+  function loadDrafts() {
+    setStatus('Cargando borradores...');
+    google.script.run
+      .withSuccessHandler(function(drafts) {
+        currentDrafts = drafts;
+        var sel = document.getElementById('draftSelect');
+        sel.innerHTML = '<option value="">-- Selecciona un borrador --</option>';
+        drafts.forEach(function(d) {
+          var opt = document.createElement('option');
+          opt.value = d.id;
+          opt.textContent = d.subject + (d.hasAttachments ? ' [adj]' : '');
+          sel.appendChild(opt);
+        });
+        setStatus(drafts.length + ' borradores encontrados');
+      })
+      .withFailureHandler(showError)
+      .getDrafts();
+  }
+
+  /* ═══ Draft preview ═══ */
+  document.getElementById('draftSelect').addEventListener('change', function() {
+    var draftId = this.value;
+    var preview = document.getElementById('draftPreview');
+    if (!draftId) { preview.style.display = 'none'; return; }
+    var draft = currentDrafts.find(function(d) { return d.id === draftId; });
+    if (draft) {
+      preview.textContent = draft.snippet + '...';
+      preview.style.display = 'block';
+    }
+    updateSendButton();
+  });
+
+  /* ═══ Load aliases ═══ */
+  function loadAliases() {
+    google.script.run
+      .withSuccessHandler(function(aliases) {
+        var sel = document.getElementById('aliasSelect');
+        sel.innerHTML = '';
+        aliases.forEach(function(a) {
+          var opt = document.createElement('option');
+          opt.value = a.email;
+          opt.textContent = (a.displayName ? a.displayName + ' <' + a.email + '>' : a.email)
+            + (a.isDefault ? ' (principal)' : '');
+          if (a.isDefault) opt.selected = true;
+          sel.appendChild(opt);
+        });
+      })
+      .withFailureHandler(function() {
+        document.getElementById('aliasSelect').innerHTML = '<option value="">manager@rubencoton.com</option>';
+      })
+      .getAliases();
+  }
+
+  /* ═══ Load recipients ═══ */
+  function loadRecipients() {
+    var opts = { skipSent: document.getElementById('skipSent').checked };
+    google.script.run
+      .withSuccessHandler(function(data) {
+        recipientCount = data.recipients.length;
+        document.getElementById('recipientCount').textContent = recipientCount;
+        updateSendButton();
+      })
+      .withFailureHandler(function(err) {
+        document.getElementById('recipientCount').textContent = '?';
+        showError(err);
+      })
+      .getRecipientsFromSheet(opts);
+  }
+
+  document.getElementById('skipSent').addEventListener('change', loadRecipients);
+
+  /* ═══ Load columns ═══ */
+  function loadColumns() {
+    google.script.run
+      .withSuccessHandler(function(cols) {
+        var sel = document.getElementById('filterColumn');
+        sel.innerHTML = '<option value="">Sin filtro</option>';
+        cols.forEach(function(c) {
+          var opt = document.createElement('option');
+          opt.value = c;
+          opt.textContent = c;
+          sel.appendChild(opt);
+        });
+      })
+      .getSheetColumns();
+  }
+
+  /* ═══ Load quota ═══ */
+  function loadQuota() {
+    google.script.run
+      .withSuccessHandler(function(q) {
+        document.getElementById('quotaCount').textContent = q + ' emails';
+        var pct = Math.min(100, (q / 1500) * 100);
+        document.getElementById('quotaFill').style.width = pct + '%';
+        document.getElementById('quotaFill').style.background = q < 50 ? '#d93025' : '#188038';
+      })
+      .getRemainingQuota();
+  }
+
+  /* ═══ Update send button ═══ */
+  function updateSendButton() {
+    var draftId = document.getElementById('draftSelect').value;
+    var btn = document.getElementById('btnSend');
+    document.getElementById('sendCount').textContent = recipientCount;
+    btn.disabled = !draftId || recipientCount === 0;
+  }
+
+  /* ═══ Send test ═══ */
+  function sendTest() {
+    var draftId = document.getElementById('draftSelect').value;
+    if (!draftId) { showError({message: 'Selecciona un borrador'}); return; }
+
+    setStatus('Enviando email de prueba...', '');
+    document.getElementById('btnTest').disabled = true;
+
+    google.script.run
+      .withSuccessHandler(function(r) {
+        setStatus('Prueba enviada a ' + r.to, 'success');
+        document.getElementById('btnTest').disabled = false;
+      })
+      .withFailureHandler(function(err) {
+        showError(err);
+        document.getElementById('btnTest').disabled = false;
+      })
+      .sendTestEmail({
+        draftId: draftId,
+        senderName: document.getElementById('senderName').value,
+        alias: document.getElementById('aliasSelect').value
+      });
+  }
+
+  /* ═══ Send merge ═══ */
+  function sendMerge() {
+    var draftId = document.getElementById('draftSelect').value;
+    if (!draftId) return;
+
+    if (!confirm('Enviar ' + recipientCount + ' emails ahora?')) return;
+
+    var config = {
+      draftId: draftId,
+      senderName: document.getElementById('senderName').value,
+      alias: document.getElementById('aliasSelect').value,
+      cc: document.getElementById('ccEmail').value,
+      bcc: document.getElementById('bccEmail').value,
+      replyTo: document.getElementById('replyTo').value,
+      filterColumn: document.getElementById('filterColumn').value,
+      filterValue: document.getElementById('filterValue').value,
+      skipSent: document.getElementById('skipSent').checked
+    };
+
+    // Show progress
+    document.getElementById('progressWrap').style.display = 'block';
+    document.getElementById('progressFill').style.width = '10%';
+    document.getElementById('progressText').textContent = 'Enviando ' + recipientCount + ' emails...';
+    document.getElementById('btnSend').disabled = true;
+    document.getElementById('btnTest').disabled = true;
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        document.getElementById('progressFill').style.width = '100%';
+        document.getElementById('progressText').textContent =
+          result.sent + ' enviados, ' + result.errors + ' errores';
+        setStatus('Campana completada: ' + result.sent + '/' + result.total + ' enviados', 'success');
+        document.getElementById('btnSend').disabled = false;
+        document.getElementById('btnTest').disabled = false;
+        loadQuota();
+        loadRecipients();
+      })
+      .withFailureHandler(function(err) {
+        document.getElementById('progressWrap').style.display = 'none';
+        showError(err);
+        document.getElementById('btnSend').disabled = false;
+        document.getElementById('btnTest').disabled = false;
+      })
+      .sendMailMerge(config);
+  }
+
+  /* ═══ Schedule ═══ */
+  function scheduleMerge() {
+    var draftId = document.getElementById('draftSelect').value;
+    var datetime = document.getElementById('scheduleDate').value;
+    if (!draftId || !datetime) { showError({message: 'Selecciona borrador y fecha'}); return; }
+
+    var config = {
+      draftId: draftId,
+      senderName: document.getElementById('senderName').value,
+      alias: document.getElementById('aliasSelect').value,
+      cc: document.getElementById('ccEmail').value,
+      bcc: document.getElementById('bccEmail').value,
+      replyTo: document.getElementById('replyTo').value,
+      filterColumn: document.getElementById('filterColumn').value,
+      filterValue: document.getElementById('filterValue').value,
+      skipSent: document.getElementById('skipSent').checked
+    };
+
+    google.script.run
+      .withSuccessHandler(function(r) {
+        setStatus('Envio programado para ' + datetime, 'success');
+      })
+      .withFailureHandler(showError)
+      .scheduleCampaign(config, datetime);
+  }
+
+  /* ═══ Toggle sections ═══ */
+  function toggleAdvanced() {
+    var el = document.getElementById('advancedContent');
+    var arrow = document.getElementById('advancedArrow');
+    el.classList.toggle('show');
+    arrow.innerHTML = el.classList.contains('show') ? '&#9660;' : '&#9654;';
+  }
+  function toggleSchedule() {
+    var el = document.getElementById('scheduleContent');
+    var arrow = document.getElementById('scheduleArrow');
+    el.classList.toggle('show');
+    arrow.innerHTML = el.classList.contains('show') ? '&#9660;' : '&#9654;';
+  }
+
+  /* ═══ Status helpers ═══ */
+  function setStatus(msg, type) {
+    var el = document.getElementById('statusMsg');
+    el.textContent = msg;
+    el.className = 'status-msg' + (type ? ' ' + type : '');
+  }
+  function showError(err) {
+    setStatus(err.message || String(err), 'error');
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Google Sans', Arial, sans-serif; background: #f8f9fa; color: #202124; font-size: 13px; }
+    .header { background: #1a1a1a; color: #fff; padding: 16px; text-align: center; }
+    .header h1 { font-size: 15px; font-weight: 600; }
+    .header .subtitle { font-size: 11px; color: #f60; margin-top: 2px; }
+
+    .section { background: #fff; margin: 8px; border-radius: 8px; padding: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+    .section-title { font-size: 11px; font-weight: 600; color: #5f6368; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+
+    label { display: block; font-size: 12px; color: #5f6368; margin-bottom: 4px; margin-top: 10px; }
+    input[type="number"], select {
+      width: 100%; padding: 8px 10px; border: 1px solid #dadce0; border-radius: 6px;
+      font-size: 13px; outline: none;
+    }
+    input:focus, select:focus { border-color: #f60; }
+
+    .checkbox-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+    .checkbox-row input[type="checkbox"] { accent-color: #f60; width: 16px; height: 16px; }
+    .checkbox-row label { margin: 0; font-size: 13px; color: #202124; }
+
+    .btn { display: block; width: 100%; padding: 10px; border: none; border-radius: 6px;
+      font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; margin-top: 10px; }
+    .btn-primary { background: #f60; color: #fff; }
+    .btn-secondary { background: #e8eaed; color: #202124; }
+    .btn:hover { opacity: 0.9; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .stat-box { background: #f1f3f4; border-radius: 6px; padding: 12px; text-align: center; margin-top: 8px; }
+    .stat-number { font-size: 28px; font-weight: 700; color: #f60; }
+    .stat-label { font-size: 11px; color: #5f6368; margin-top: 2px; }
+
+    .status-msg { font-size: 12px; text-align: center; padding: 10px; }
+    .status-msg.success { color: #188038; }
+    .status-msg.error { color: #d93025; }
+
+    .info { font-size: 11px; color: #80868b; margin-top: 6px; line-height: 1.4; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>EMAILING RUBEN COTON</h1>
+    <div class="subtitle">Importar Google Contacts</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Contactos disponibles</div>
+    <div class="stat-box">
+      <div class="stat-number" id="contactCount">...</div>
+      <div class="stat-label">contactos con email en Google Contacts</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Opciones de importacion</div>
+
+    <label>Maximo de contactos</label>
+    <input type="number" id="maxResults" value="200" min="1" max="2000">
+
+    <div class="checkbox-row">
+      <input type="checkbox" id="overwrite">
+      <label for="overwrite">Escribir en la hoja activa (en vez de crear nueva)</label>
+    </div>
+
+    <div class="info">
+      Se importaran: Email, Nombre, Apellido, Telefono, Organizacion, Cargo.
+      Solo contactos que tengan email.
+    </div>
+  </div>
+
+  <div class="section">
+    <button class="btn btn-primary" onclick="importContacts()" id="btnImport">Importar contactos</button>
+  </div>
+
+  <div id="statusMsg" class="status-msg"></div>
+
+<script>
+  window.addEventListener('load', function() {
+    google.script.run
+      .withSuccessHandler(function(count) {
+        document.getElementById('contactCount').textContent = count >= 0 ? count : '?';
+      })
+      .getContactsCount();
+  });
+
+  function importContacts() {
+    var btn = document.getElementById('btnImport');
+    btn.disabled = true;
+    btn.textContent = 'Importando...';
+    setStatus('Importando contactos desde Google...', '');
+
+    var opts = {
+      maxResults: parseInt(document.getElementById('maxResults').value) || 200,
+      overwrite: document.getElementById('overwrite').checked
+    };
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        btn.disabled = false;
+        btn.textContent = 'Importar contactos';
+        setStatus(result.message + ' en hoja "' + result.sheetName + '"', 'success');
+      })
+      .withFailureHandler(function(err) {
+        btn.disabled = false;
+        btn.textContent = 'Importar contactos';
+        setStatus('Error: ' + err.message, 'error');
+      })
+      .importContactsToSheet(opts);
+  }
+
+  function setStatus(msg, type) {
+    var el = document.getElementById('statusMsg');
+    el.textContent = msg;
+    el.className = 'status-msg' + (type ? ' ' + type : '');
+  }
+</script>
+</body>
+</html>
