@@ -328,6 +328,8 @@
   }
 
   /* ═══ Send merge ═══ */
+  var progressTimer = null;
+
   function sendMerge() {
     var draftId = document.getElementById('draftSelect').value;
     if (!draftId) return;
@@ -348,29 +350,53 @@
 
     // Show progress
     document.getElementById('progressWrap').style.display = 'block';
-    document.getElementById('progressFill').style.width = '10%';
-    document.getElementById('progressText').textContent = 'Enviando ' + recipientCount + ' emails...';
+    document.getElementById('progressFill').style.width = '2%';
+    document.getElementById('progressText').textContent = 'Iniciando envio de ' + recipientCount + ' emails...';
     document.getElementById('btnSend').disabled = true;
     document.getElementById('btnTest').disabled = true;
 
+    // Polling de progreso en tiempo real cada 2 segundos
+    progressTimer = setInterval(pollProgress, 2000);
+
     google.script.run
       .withSuccessHandler(function(result) {
+        clearInterval(progressTimer);
         document.getElementById('progressFill').style.width = '100%';
-        document.getElementById('progressText').textContent =
-          result.sent + ' enviados, ' + result.errors + ' errores';
-        setStatus('Campana completada: ' + result.sent + '/' + result.total + ' enviados', 'success');
+        document.getElementById('progressFill').style.background = '#188038';
+        var msg = result.sent + ' enviados';
+        if (result.bounced > 0) msg += ', ' + result.bounced + ' rebotados';
+        if (result.errors > 0) msg += ', ' + result.errors + ' errores';
+        document.getElementById('progressText').textContent = msg;
+        setStatus('Campana completada. Cuota restante: ' + result.quota, 'success');
         document.getElementById('btnSend').disabled = false;
         document.getElementById('btnTest').disabled = false;
         loadQuota();
         loadRecipients();
       })
       .withFailureHandler(function(err) {
+        clearInterval(progressTimer);
         document.getElementById('progressWrap').style.display = 'none';
         showError(err);
         document.getElementById('btnSend').disabled = false;
         document.getElementById('btnTest').disabled = false;
       })
       .sendMailMerge(config);
+  }
+
+  /* ═══ Polling progreso en tiempo real ═══ */
+  function pollProgress() {
+    google.script.run
+      .withSuccessHandler(function(p) {
+        if (!p) return;
+        var pct = p.total > 0 ? Math.round((p.current || 0) / p.total * 100) : 0;
+        document.getElementById('progressFill').style.width = Math.max(2, pct) + '%';
+        var txt = (p.current || 0) + ' de ' + p.total;
+        if (p.sent > 0) txt += ' | ' + p.sent + ' enviados';
+        if (p.bounced > 0) txt += ' | ' + p.bounced + ' rebotados';
+        if (p.errors > 0) txt += ' | ' + p.errors + ' errores';
+        document.getElementById('progressText').textContent = txt;
+      })
+      .getMergeProgress();
   }
 
   /* ═══ Schedule ═══ */

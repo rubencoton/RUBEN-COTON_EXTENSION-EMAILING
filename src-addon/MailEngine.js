@@ -97,8 +97,15 @@ var MERGE_EMAIL_HEADERS = ["email", "correo", "correo electrónico", "correo ele
  */
 function getRecipientsFromSheet(options) {
   options = options || {};
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getActiveSheet();
+  var ss, sheet;
+  // Fallback para triggers programados (no hay spreadsheet activo)
+  if (options._sheetId) {
+    ss = SpreadsheetApp.openById(options._sheetId);
+    sheet = options._sheetName ? ss.getSheetByName(options._sheetName) : ss.getSheets()[0];
+  } else {
+    ss = SpreadsheetApp.getActiveSpreadsheet();
+    sheet = ss.getActiveSheet();
+  }
   var data = sheet.getDataRange().getValues();
 
   if (data.length < 2) {
@@ -339,7 +346,17 @@ function sendMailMerge(config) {
   var quota = getRemainingQuota();
   var toSend = recipientData.recipients.length;
   if (toSend > quota) {
-    throw new Error("Cuota insuficiente. Necesitas " + toSend + " pero quedan " + quota + " emails hoy.");
+    // Marcar los que exceden como SCHEDULED
+    var mergeStatusColQ = ensureMergeStatusColumn();
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getActiveSheet();
+    for (var q = quota; q < recipientData.recipients.length; q++) {
+      sheet.getRange(recipientData.recipients[q].rowIndex, mergeStatusColQ).setValue("SCHEDULED");
+    }
+    SpreadsheetApp.flush();
+    // Solo enviar los que caben en la cuota
+    recipientData.recipients = recipientData.recipients.slice(0, quota);
+    toSend = recipientData.recipients.length;
   }
 
   // Asegurar columna Merge status
@@ -351,7 +368,13 @@ function sendMailMerge(config) {
 
   var sent = 0;
   var errors = 0;
-  var results = [];
+  var bounced = 0;
+  var cache = CacheService.getScriptCache();
+
+  // Progreso inicial
+  cache.put("mergeProgress", JSON.stringify({
+    sent: 0, errors: 0, bounced: 0, total: toSend, running: true, startTime: new Date().toISOString()
+  }), 600);
 
   for (var i = 0; i < recipientData.recipients.length; i++) {
     var recipient = recipientData.recipients[i];
@@ -375,21 +398,41 @@ function sendMailMerge(config) {
 
       updateMergeStatus(recipient.rowIndex, mergeStatusCol, "EMAIL_SENT");
       sent++;
-      results.push({ email: recipient.email, status: "EMAIL_SENT", row: recipient.rowIndex });
-
-      // Pausa entre envios para no saturar (50ms)
-      if (i < recipientData.recipients.length - 1) {
-        Utilities.sleep(50);
-      }
 
     } catch (err) {
-      updateMergeStatus(recipient.rowIndex, mergeStatusCol, "ERROR: " + err.message.substring(0, 50));
-      errors++;
-      results.push({ email: recipient.email, status: "ERROR", error: err.message, row: recipient.rowIndex });
+      var errMsg = err.message || "";
+      // Detectar bounces (invalid email, recipient not found)
+      if (errMsg.indexOf("Invalid") > -1 || errMsg.indexOf("not found") > -1 || errMsg.indexOf("invalid") > -1) {
+        updateMergeStatus(recipient.rowIndex, mergeStatusCol, "BOUNCED");
+        bounced++;
+      } else {
+        updateMergeStatus(recipient.rowIndex, mergeStatusCol, "ERROR");
+        errors++;
+      }
+    }
+
+    // Actualizar progreso cada 5 emails (para polling en tiempo real)
+    if (i % 5 === 0 || i === recipientData.recipients.length - 1) {
+      cache.put("mergeProgress", JSON.stringify({
+        sent: sent, errors: errors, bounced: bounced, total: toSend,
+        current: i + 1, running: (i < recipientData.recipients.length - 1),
+        lastEmail: recipient.email
+      }), 600);
+    }
+
+    // Pausa entre envios (100ms para no saturar Gmail)
+    if (i < recipientData.recipients.length - 1) {
+      Utilities.sleep(100);
     }
   }
 
-  // Guardar metadata de campana en PropertiesService
+  // Progreso final
+  cache.put("mergeProgress", JSON.stringify({
+    sent: sent, errors: errors, bounced: bounced, total: toSend,
+    current: toSend, running: false
+  }), 600);
+
+  // Guardar campana
   var campaignId = "campaign_" + new Date().getTime();
   var campaignData = {
     id: campaignId,
@@ -398,34 +441,33 @@ function sendMailMerge(config) {
     senderName: config.senderName,
     sent: sent,
     errors: errors,
+    bounced: bounced,
     total: toSend,
     sheetName: recipientData.sheetName
   };
 
   var props = PropertiesService.getScriptProperties();
   props.setProperty(campaignId, JSON.stringify(campaignData));
-
-  // Guardar ultima campana
   props.setProperty("lastCampaignId", campaignId);
+
+  SpreadsheetApp.flush();
 
   return {
     campaignId: campaignId,
     sent: sent,
     errors: errors,
+    bounced: bounced,
     total: toSend,
-    quota: getRemainingQuota(),
-    results: results
+    quota: getRemainingQuota()
   };
 }
 
 /**
- * Obtiene el progreso del merge (para polling desde el sidebar)
+ * Progreso en tiempo real del merge (polling desde el sidebar via CacheService)
  */
 function getMergeProgress() {
-  var props = PropertiesService.getScriptProperties();
-  var lastId = props.getProperty("lastCampaignId");
-  if (!lastId) return null;
-  var data = props.getProperty(lastId);
+  var cache = CacheService.getScriptCache();
+  var data = cache.get("mergeProgress");
   return data ? JSON.parse(data) : null;
 }
 

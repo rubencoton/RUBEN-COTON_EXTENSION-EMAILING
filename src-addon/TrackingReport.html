@@ -107,6 +107,7 @@
 
 <script>
   var currentFilter = '';
+  function esc(t){var d=document.createElement('div');d.textContent=t;return d.innerHTML;}
 
   window.addEventListener('load', function() {
     loadStats();
@@ -160,10 +161,10 @@
         }
         el.innerHTML = list.map(function(r) {
           return '<div class="recipient-row">' +
-            '<div><div class="recipient-email">' + r.email + '</div>' +
-            (r.name ? '<div class="recipient-name">' + r.name + '</div>' : '') +
+            '<div><div class="recipient-email">' + esc(r.email) + '</div>' +
+            (r.name ? '<div class="recipient-name">' + esc(r.name) + '</div>' : '') +
             '</div>' +
-            '<span class="status-badge ' + getBadgeClass(r.status) + '">' + r.status + '</span>' +
+            '<span class="status-badge ' + getBadgeClass(r.status) + '">' + esc(r.status) + '</span>' +
             '</div>';
         }).join('');
       })

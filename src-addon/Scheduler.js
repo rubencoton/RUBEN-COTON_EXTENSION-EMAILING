@@ -86,9 +86,12 @@ function executeScheduledCampaign(e) {
       throw new Error("Hoja no encontrada: " + scheduleData.sheetName);
     }
 
-    // Activar la hoja (necesario para que getActiveSheet funcione en MailEngine)
-    SpreadsheetApp.setActiveSpreadsheet(ss);
-    sheet.activate();
+    // Nota: en time-based triggers no hay spreadsheet activo.
+    // sendMailMerge usa getActiveSpreadsheet() internamente, asi que
+    // inyectamos _sheetId y _sheetName en la config como fallback.
+    scheduleData.config._sheetId = scheduleData.sheetId;
+    scheduleData.config._sheetName = scheduleData.sheetName;
+    scheduleData.config.skipSent = true;
 
     // Ejecutar el merge
     var result = sendMailMerge(scheduleData.config);
