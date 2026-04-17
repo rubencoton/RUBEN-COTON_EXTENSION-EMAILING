@@ -11,10 +11,13 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "sync": "node src/syncOnce.js",
-    "list-sheets": "node src/listSheets.js"
+    "list-sheets": "node src/listSheets.js",
+    "deploy:all": "node src/deployAll.js",
+    "hub:test": "node -e \"const {getHub}=require('./src/hubConnector'); getHub().then(h=>console.log('Hub OK')).catch(e=>console.error(e.message));\""
   },
   "dependencies": {
     "dotenv": "^16.4.5",
+    "google-auth-library": "^9.14.0",
     "googleapis": "^171.4.0"
   }
 }

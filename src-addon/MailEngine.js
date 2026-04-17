@@ -246,6 +246,16 @@ function getRemainingQuota() {
   return MailApp.getRemainingDailyQuota();
 }
 
+/**
+ * Funcion auxiliar para autorizar permisos desde el editor.
+ * Ejecutar esta funcion UNA VEZ desde el editor para activar el popup de autorizacion.
+ */
+function autorizar() {
+  var email = Session.getActiveUser().getEmail();
+  var quota = MailApp.getRemainingDailyQuota();
+  Logger.log("Autorizado como: " + email + " | Cuota restante: " + quota);
+}
+
 /* ═══════════════════════════════════════════
    ENVIO DE PRUEBA
    ═══════════════════════════════════════════ */
