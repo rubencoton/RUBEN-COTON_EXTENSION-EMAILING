@@ -1,0 +1,44 @@
+[
+  {
+    "name": "CRM: VENTA-BOOKING",
+    "id": "1_VK6eXqsBuxzvkEJ-uoCIOrsgz-ivpzYKiwwKWzxCtA",
+    "scriptId": "1fQyr-7m8urlvmsbFEJiP0GbnU4byCCHV5IfESXwErpvMxJxRH3CDHud_",
+    "status": "OK"
+  },
+  {
+    "name": "CRM: OTROS",
+    "id": "1WrO-GTi5kvEWnZ_aL4R_PolTIPP3x-lGoAtmTYHTuVo",
+    "scriptId": "1gcp_TiXfiEoihUse2pgtIJTsD1NOy3fiRyh65rf5GRq789iaYVXJfK4m",
+    "status": "OK"
+  },
+  {
+    "name": "CRM: MUNDO DISCOGRAFICO",
+    "id": "1az7PQVf6KlNqvbZh4A6B0_mqLbb2g2Rmq2Y4Febpnas",
+    "scriptId": "1TSP1Jn9uKOxXilVbSk9hJtSUcxGTnUsWZrb9kQGMQlIsCb2Ezpla9ISE",
+    "status": "OK"
+  },
+  {
+    "name": "CRM: MARKETING Y PROMOCION",
+    "id": "1Uq2wm2tMKxv11C_ULNszsHzlxvQuZ0EAwzX7AVfXqic",
+    "scriptId": "1ZiQeg8HUvFxQ-XTHwUXxQ4V1PxDyFruJ9mE8OYFpJywPUyPWSL16l-Jy",
+    "status": "OK"
+  },
+  {
+    "name": "CRM: FESTIVALES",
+    "id": "1H5haxYS4a36srL_aBlOo9W-2AEMqcUP_Bm4kZBbEg_Q",
+    "scriptId": "13t_m3R_L_B3SVBLcKE9HZ9OADyddzkyqtyuSYWR1j5uqe1BUqASh2maL",
+    "status": "OK"
+  },
+  {
+    "name": "CRM: BELLA BESTIA",
+    "id": "1OJIIqh60OAE1589Brql9e_RjWvXrCGYttz5g5pb72so",
+    "scriptId": "1Ca2karqo7zKWbVe90C9V_KhK52aaR7nycgveC0xVQX-CSyf363C6TjNi",
+    "status": "OK"
+  },
+  {
+    "name": "CRM: CENTRAL",
+    "id": "1gNg71eDZefbx_8leQ8ij7pOaBXdsWIFnNK_QhXjv8W0",
+    "scriptId": "1xayzuxNxoo3NFXp3RJUjsP9yinUU1tP1ahUMfD1p3mfFzf0rekt5qMW4",
+    "status": "OK"
+  }
+]
